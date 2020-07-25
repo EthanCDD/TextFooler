@@ -1,5 +1,7 @@
 from __future__ import division
 import nltk
+nltk.download('averaged_perceptron_tagger')
+nltk.download('universal_tagset')
 from nltk.stem.wordnet import WordNetLemmatizer
 from pattern.en import conjugate, lemma, lexeme, PRESENT, SG, PL, PAST, PROGRESSIVE
 import random

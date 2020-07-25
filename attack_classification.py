@@ -48,14 +48,15 @@ class USE(object):
             })
         return scores
 
-def pick_most_similar_words_batch(src_words, sim_mat, idx2word, ret_count=10, threshold=0.):
+def pick_most_similar_words_batch(src_words, sim_embeddings, idx2word, ret_count=10, threshold=0.):
     """
     embeddings is a matrix with (d, vocab_size)
     """
-    sim_order = np.argsort(-sim_mat[src_words, :])[:, 1:1 + ret_count]
+    scores = np.dot(sim_embeddings[src_words], sim_embeddings.T)
+    sim_order = np.argsort(-scores)[:, 1:1 + ret_count]
     sim_words, sim_values = [], []
     for idx, src_word in enumerate(src_words):
-        sim_value = sim_mat[src_word][sim_order[idx]]
+        sim_value = scores[idx][sim_order[idx]]
         mask = sim_value >= threshold
         sim_word, sim_value = sim_order[idx][mask], sim_value[mask]
         sim_word = [idx2word[id] for id in sim_word]
@@ -193,7 +194,7 @@ class NLIDataset_BERT(Dataset):
         return eval_dataloader
 
 
-def attack(text_ls, true_label, predictor, stop_words_set, word2idx, idx2word, cos_sim, sim_predictor=None,
+def attack(text_ls, true_label, predictor, stop_words_set, word2idx, idx2word, embeddings, sim_predictor=None,
            import_score_threshold=-1., sim_score_threshold=0.5, sim_score_window=15, synonym_num=50,
            batch_size=32):
     # first check the prediction of the original text
@@ -232,7 +233,7 @@ def attack(text_ls, true_label, predictor, stop_words_set, word2idx, idx2word, c
 
         # find synonyms
         words_perturb_idx = [word2idx[word] for idx, word in words_perturb if word in word2idx]
-        synonym_words, _ = pick_most_similar_words_batch(words_perturb_idx, cos_sim, idx2word, synonym_num, 0.5)
+        synonym_words, _ = pick_most_similar_words_batch(words_perturb_idx, embeddings, idx2word, synonym_num, 0.5)
         synonyms_all = []
         for idx, word in words_perturb:
             if word in word2idx:
@@ -292,7 +293,7 @@ def attack(text_ls, true_label, predictor, stop_words_set, word2idx, idx2word, c
         return ' '.join(text_prime), num_changed, orig_label, torch.argmax(predictor([text_prime])), num_queries
 
 
-def random_attack(text_ls, true_label, predictor, perturb_ratio, stop_words_set, word2idx, idx2word, cos_sim,
+def random_attack(text_ls, true_label, predictor, perturb_ratio, stop_words_set, word2idx, idx2word, embeddings,
                   sim_predictor=None, import_score_threshold=-1., sim_score_threshold=0.5, sim_score_window=15,
                   synonym_num=50, batch_size=32):
     # first check the prediction of the original text
@@ -317,7 +318,7 @@ def random_attack(text_ls, true_label, predictor, perturb_ratio, stop_words_set,
 
         # find synonyms
         words_perturb_idx = [word2idx[word] for idx, word in words_perturb if word in word2idx]
-        synonym_words, _ = pick_most_similar_words_batch(words_perturb_idx, cos_sim, idx2word, synonym_num, 0.5)
+        synonym_words, _ = pick_most_similar_words_batch(words_perturb_idx, embeddings, idx2word, synonym_num, 0.5)
         synonyms_all = []
         for idx, word in words_perturb:
             if word in word2idx:
@@ -509,10 +510,10 @@ def main():
                 embedding = [float(num) for num in line.strip().split()[1:]]
                 embeddings.append(embedding)
         embeddings = np.array(embeddings)
-        product = np.dot(embeddings, embeddings.T)
-        norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
-        cos_sim = product / np.dot(norm, norm.T)
-    print("Cos sim import finished!")
+        # product = np.dot(embeddings, embeddings.T)
+        # norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
+        # cos_sim = product / np.dot(norm, norm.T)
+    print("Cos sim embeddings import finished!")
 
     # build the semantic similarity module
     use = USE(args.USE_cache_path)
@@ -536,7 +537,7 @@ def main():
         if args.perturb_ratio > 0.:
             new_text, num_changed, orig_label, \
             new_label, num_queries = random_attack(text, true_label, predictor, args.perturb_ratio, stop_words_set,
-                                                    word2idx, idx2word, cos_sim, sim_predictor=use,
+                                                    word2idx, idx2word, embeddings, sim_predictor=use,
                                                     sim_score_threshold=args.sim_score_threshold,
                                                     import_score_threshold=args.import_score_threshold,
                                                     sim_score_window=args.sim_score_window,
@@ -545,7 +546,7 @@ def main():
         else:
             new_text, num_changed, orig_label, \
             new_label, num_queries = attack(text, true_label, predictor, stop_words_set,
-                                            word2idx, idx2word, cos_sim, sim_predictor=use,
+                                            word2idx, idx2word, embeddings, sim_predictor=use,
                                             sim_score_threshold=args.sim_score_threshold,
                                             import_score_threshold=args.import_score_threshold,
                                             sim_score_window=args.sim_score_window,
