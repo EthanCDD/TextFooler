@@ -141,7 +141,7 @@ def train_model(epoch, model, optimizer,
         loss.item(),
         test_acc
     ))
-
+    save_path = os.path.join(save_path, 'best_tfr_'+'imdb')
     if test_acc > best_test:
         best_test = test_acc
         if save_path:
@@ -170,12 +170,12 @@ def main(args):
         train_x, train_y = dataloader.read_corpus('/data/medg/misc/jindi/nlp/datasets/mr/train.txt')
         test_x, test_y = dataloader.read_corpus('/data/medg/misc/jindi/nlp/datasets/mr/test.txt')
     elif args.dataset == 'imdb':
-        train_x, train_y = dataloader.read_corpus(os.path.join('/data/medg/misc/jindi/nlp/datasets/imdb',
+        train_x, train_y = dataloader.read_corpus(os.path.join('imdb',
                                                                'train_tok.csv'),
-                                                  clean=False, MR=True, shuffle=True)
-        test_x, test_y = dataloader.read_corpus(os.path.join('/data/medg/misc/jindi/nlp/datasets/imdb',
+                                                  max_length=args.max_len , clean=False, MR=True, shuffle=True)
+        test_x, test_y = dataloader.read_corpus(os.path.join('imdb',
                                                                'test_tok.csv'),
-                                                clean=False, MR=True, shuffle=True)
+                                                max_length=args.max_len, clean=False, MR=True, shuffle=True)
     else:
         train_x, train_y = dataloader.read_corpus('/afs/csail.mit.edu/u/z/zhijing/proj/to_di/data/{}/'
                                                     'train_tok.csv'.format(args.dataset),
@@ -263,12 +263,13 @@ if __name__ == "__main__":
     argparser.add_argument("--batch_size", "--batch", type=int, default=32)
     argparser.add_argument("--max_epoch", type=int, default=70)
     argparser.add_argument("--d", type=int, default=150)
+    argparser.add_argument("--max_len", type=int, required=True)
     argparser.add_argument("--dropout", type=float, default=0.3)
     argparser.add_argument("--depth", type=int, default=1)
     argparser.add_argument("--lr", type=float, default=0.001)
     argparser.add_argument("--lr_decay", type=float, default=0)
     argparser.add_argument("--cv", type=int, default=0)
-    argparser.add_argument("--save_path", type=str, default='')
+    argparser.add_argument("--save_path", type=str, default ='/content/drive/My Drive/Master_Final_Project/Genetic_attack/Code/nlp_adversarial_example_master_pytorch')
     argparser.add_argument("--save_data_split", action='store_true', help="whether to save train/test split")
     argparser.add_argument("--gpu_id", type=int, default=0)
 

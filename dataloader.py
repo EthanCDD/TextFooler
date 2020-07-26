@@ -27,7 +27,7 @@ def clean_str(string, TREC=False):
     string = re.sub(r"\s{2,}", " ", string)
     return string.strip() if TREC else string.strip().lower()
 
-def read_corpus(path, clean=True, MR=True, encoding='utf8', shuffle=False, lower=True):
+def read_corpus(path, max_length, clean=True, MR=True, encoding='utf8', shuffle=False, lower=True):
     data = []
     labels = []
     with open(path, encoding=encoding) as fin:
@@ -43,7 +43,7 @@ def read_corpus(path, clean=True, MR=True, encoding='utf8', shuffle=False, lower
             if lower:
                 text = text.lower()
             labels.append(label)
-            data.append(text.split())
+            data.append(text.split()[:max_length])
 
     if shuffle:
         perm = list(range(len(data)))

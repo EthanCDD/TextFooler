@@ -382,6 +382,14 @@ def main():
     parser = argparse.ArgumentParser()
 
     ## Required parameters
+    parser.add_argument("--attack_len",
+                        required=True,
+                        type=int,
+                        help="Attack sequence length")
+    parser.add_argument("--max_length",
+                        required=True,
+                        type=int,
+                        help="Train sequence length")
     parser.add_argument("--dataset_path",
                         type=str,
                         required=True,
@@ -398,7 +406,8 @@ def main():
                              "For NLI: InferSent, ESIM, bert-base-uncased")
     parser.add_argument("--target_model_path",
                         type=str,
-                        required=True,
+                        # required=True,
+                        default='/content/drive/My Drive/Master_Final_Project/Genetic_attack/Code/nlp_adversarial_example_master_pytorch/best_tfr_imdb',
                         help="pre-trained target model path")
     parser.add_argument("--word_embeddings_path",
                         type=str,
@@ -456,14 +465,14 @@ def main():
                         help="max sequence length for BERT target model")
 
     args = parser.parse_args()
-
+    max_length = args.max_length
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir):
         print("Output directory ({}) already exists and is not empty.".format(args.output_dir))
     else:
         os.makedirs(args.output_dir, exist_ok=True)
 
     # get data to attack
-    texts, labels = dataloader.read_corpus(args.dataset_path)
+    texts, labels = dataloader.read_corpus(args.dataset_path, max_length=max_length)
     data = list(zip(texts, labels))
     data = data[:args.data_size] # choose how many samples for adversary
     print("Data import finished!")
@@ -471,7 +480,7 @@ def main():
     # construct the model
     print("Building Model...")
     if args.target_model == 'wordLSTM':
-        model = Model(args.word_embeddings_path, nclasses=args.nclasses).cuda()
+        model = Model(args.word_embeddings_path, hidden_size=128, nclasses=args.nclasses).cuda()
         checkpoint = torch.load(args.target_model_path, map_location='cuda:0')
         model.load_state_dict(checkpoint)
     elif args.target_model == 'wordCNN':
@@ -530,13 +539,14 @@ def main():
     log_file = open(os.path.join(args.output_dir, 'results_log'), 'a')
 
     stop_words_set = criteria.get_stopwords()
+    attack_len = args.attack_len
     print('Start attacking!')
     for idx, (text, true_label) in enumerate(data):
         if idx % 20 == 0:
             print('{} samples out of {} have been finished!'.format(idx, args.data_size))
         if args.perturb_ratio > 0.:
             new_text, num_changed, orig_label, \
-            new_label, num_queries = random_attack(text, true_label, predictor, args.perturb_ratio, stop_words_set,
+            new_label, num_queries = random_attack(text[:attack_len], true_label, predictor, args.perturb_ratio, stop_words_set,
                                                     word2idx, idx2word, embeddings, sim_predictor=use,
                                                     sim_score_threshold=args.sim_score_threshold,
                                                     import_score_threshold=args.import_score_threshold,
@@ -552,7 +562,7 @@ def main():
                                             sim_score_window=args.sim_score_window,
                                             synonym_num=args.synonym_num,
                                             batch_size=args.batch_size)
-
+        
         if true_label != orig_label:
             orig_failures += 1
         else:
