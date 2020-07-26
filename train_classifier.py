@@ -177,12 +177,12 @@ def main(args):
                                                                'test_tok.csv'),
                                                 max_length=args.max_len, clean=False, MR=True, shuffle=True)
     else:
-        train_x, train_y = dataloader.read_corpus('/afs/csail.mit.edu/u/z/zhijing/proj/to_di/data/{}/'
+        train_x, train_y = dataloader.read_corpus('{}/'
                                                     'train_tok.csv'.format(args.dataset),
-                                                  clean=False, MR=False, shuffle=True)
-        test_x, test_y = dataloader.read_corpus('/afs/csail.mit.edu/u/z/zhijing/proj/to_di/data/{}/'
+                                                 max_length=args.max_len, clean=False, MR=False, shuffle=True)
+        test_x, test_y = dataloader.read_corpus('{}/'
                                                     'test_tok.csv'.format(args.dataset),
-                                                clean=False, MR=False, shuffle=True)
+                                               max_length=args.max_len, clean=False, MR=False, shuffle=True)
 
     nclasses = max(train_y) + 1
     # elif args.dataset == 'subj':
