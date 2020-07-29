@@ -198,6 +198,7 @@ def attack(text_ls, true_label, predictor, stop_words_set, word2idx, idx2word, e
            import_score_threshold=-1., sim_score_threshold=0.5, sim_score_window=15, synonym_num=50,
            batch_size=32):
     # first check the prediction of the original text
+    l = len(text_ls)
     orig_probs = predictor([text_ls]).squeeze()
     orig_label = torch.argmax(orig_probs)
     orig_prob = orig_probs.max()
@@ -246,6 +247,8 @@ def attack(text_ls, true_label, predictor, stop_words_set, word2idx, idx2word, e
         text_cache = text_prime[:]
         num_changed = 0
         for idx, synonyms in synonyms_all:
+            if num_changed > l*0.2:
+              return '', 0, orig_label, orig_label, 0
             new_texts = [text_prime[:idx] + [synonym] + text_prime[min(idx + 1, len_text):] for synonym in synonyms]
             new_probs = predictor(new_texts, batch_size=batch_size)
 
@@ -390,10 +393,14 @@ def main():
                         required=True,
                         type=int,
                         help="Train sequence length")
-    parser.add_argument("--dataset_path",
+    parser.add_argument("--dataset",
                         type=str,
-                        required=True,
+                        default='',
                         help="Which dataset to attack.")
+    # parser.add_argument("--dataset_path",
+    #                     type=str,
+    #                     required=True,
+    #                     help="Which dataset to attack.")
     parser.add_argument("--nclasses",
                         type=int,
                         default=2,
@@ -407,7 +414,7 @@ def main():
     parser.add_argument("--target_model_path",
                         type=str,
                         # required=True,
-                        default='/content/drive/My Drive/Master_Final_Project/Genetic_attack/Code/nlp_adversarial_example_master_pytorch/best_tfr_imdb',
+                        default='/content/drive/My Drive/Master_Final_Project/Genetic_attack/Code/nlp_adversarial_example_master_pytorch/best_tfr_imdb_100_8339',
                         help="pre-trained target model path")
     parser.add_argument("--word_embeddings_path",
                         type=str,
@@ -472,9 +479,21 @@ def main():
         os.makedirs(args.output_dir, exist_ok=True)
 
     # get data to attack
-    texts, labels = dataloader.read_corpus(args.dataset_path, max_length=max_length)
+    dataset = args.dataset.lower()
+    if dataset == 'imdb':
+      texts, labels = dataloader.read_corpus(os.path.join(dataset, 'test_tok.csv'),
+                            max_length=args.max_length, clean=False, MR=True, shuffle=True)
+    else:
+      texts, labels = dataloader.read_corpus(os.path.join(dataset, 'test_tok.csv'),
+                            max_length=args.max_length, clean=False, MR=False, shuffle=True)
+
+    num_s = len(labels)
+    indx = list(range(num_s))
+    indx = random.sample(indx, 1500)
+    texts, labels = np.array(texts)[indx].tolist(), np.array(labels)[indx].tolist()
+    # texts, labels = dataloader.read_corpus(args.dataset_path, max_length=max_length)
     data = list(zip(texts, labels))
-    data = data[:args.data_size] # choose how many samples for adversary
+    # data = data[:args.data_size] # choose how many samples for adversary
     print("Data import finished!")
 
     # construct the model
@@ -530,6 +549,7 @@ def main():
     # start attacking
     orig_failures = 0.
     adv_failures = 0.
+    adv_success = 0.
     changed_rates = []
     nums_queries = []
     orig_texts = []
@@ -542,6 +562,8 @@ def main():
     attack_len = args.attack_len
     print('Start attacking!')
     for idx, (text, true_label) in enumerate(data):
+        if idx-orig_failures >1000:
+          break
         if idx % 20 == 0:
             print('{} samples out of {} have been finished!'.format(idx, args.data_size))
         if args.perturb_ratio > 0.:
@@ -569,7 +591,8 @@ def main():
             nums_queries.append(num_queries)
         if true_label != new_label:
             adv_failures += 1
-
+        
+        
         changed_rate = 1.0 * num_changed / len(text)
 
         if true_label == orig_label and true_label != new_label:
@@ -578,11 +601,13 @@ def main():
             adv_texts.append(new_text)
             true_labels.append(true_label)
             new_labels.append(new_label)
+            adv_success += 1
 
-    message = 'For target model {}: original accuracy: {:.3f}%, adv accuracy: {:.3f}%, ' \
+    message = 'For target model {}: original accuracy: {:.3f}%, adv accuracy: {:.3f}%, adv success: {:.3f}%, ' \
               'avg changed rate: {:.3f}%, num of queries: {:.1f}\n'.format(args.target_model,
-                                                                     (1-orig_failures/1000)*100,
-                                                                     (1-adv_failures/1000)*100,
+                                                                     (1-orig_failures/idx)*100,
+                                                                     (1-adv_failures/idx)*100,
+                                                                     adv_success/1000*100,
                                                                      np.mean(changed_rates)*100,
                                                                      np.mean(nums_queries))
     print(message)
