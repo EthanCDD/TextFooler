@@ -550,6 +550,7 @@ def main():
     orig_failures = 0.
     adv_failures = 0.
     adv_success = 0.
+    orig_success = 0.
     changed_rates = []
     nums_queries = []
     orig_texts = []
@@ -562,10 +563,10 @@ def main():
     attack_len = args.attack_len
     print('Start attacking!')
     for idx, (text, true_label) in enumerate(data):
-        if idx-orig_failures >1000:
+        if orig_success >1000:
           break
         if idx % 20 == 0:
-            print('{} samples out of {} have been finished!'.format(idx, args.data_size))
+            print('{} adv success samples/ {} orig success samples out of {} have been finished!'.format(adv_success, orig_success, idx))
         if args.perturb_ratio > 0.:
             new_text, num_changed, orig_label, \
             new_label, num_queries = random_attack(text[:attack_len], true_label, predictor, args.perturb_ratio, stop_words_set,
@@ -588,6 +589,7 @@ def main():
         if true_label != orig_label:
             orig_failures += 1
         else:
+            orig_success += 1
             nums_queries.append(num_queries)
         if true_label != new_label:
             adv_failures += 1
