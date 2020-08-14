@@ -116,7 +116,7 @@ def eval_model(niter, model, input_x, input_y):
 def train_model(epoch, model, optimizer,
         train_x, train_y,
         test_x, test_y,
-        best_test, save_path):
+        best_test, save_path, max_l, d):
 
     model.train()
     niter = epoch*len(train_x)
@@ -141,7 +141,7 @@ def train_model(epoch, model, optimizer,
         loss.item(),
         test_acc
     ))
-    save_path = os.path.join(save_path, 'best_tfr_'+'imdb')
+    save_path = os.path.join(save_path, 'best_tfr_'+'imdb_'+d+'_'+str(max_l))
     if test_acc > best_test:
         best_test = test_acc
         if save_path:
@@ -242,7 +242,7 @@ def main(args):
             train_x, train_y,
             # valid_x, valid_y,
             test_x, test_y,
-            best_test, args.save_path
+            best_test, args.save_path, args.max_len, args.dataset
         )
         if args.lr_decay>0:
             optimizer.param_groups[0]['lr'] *= args.lr_decay
