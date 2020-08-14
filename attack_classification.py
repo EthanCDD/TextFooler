@@ -414,7 +414,7 @@ def main():
     parser.add_argument("--target_model_path",
                         type=str,
                         # required=True,
-                        default='/content/drive/My Drive/Master_Final_Project/Genetic_attack/Code/nlp_adversarial_example_master_pytorch/best_tfr_imdb_100_8339',
+                        default='/content/drive/My Drive/Master_Final_Project/Genetic_attack/Code/nlp_adversarial_example_master_pytorch/best_tfr_imdb',
                         help="pre-trained target model path")
     parser.add_argument("--word_embeddings_path",
                         type=str,
@@ -481,16 +481,16 @@ def main():
     # get data to attack
     dataset = args.dataset.lower()
     if dataset == 'imdb':
-      texts, labels = dataloader.read_corpus(os.path.join(dataset, 'test_tok.csv'),
+      texts, labels = dataloader.read_corpus('/content/drive/My Drive/TextFooler_pretrain/test_tok.csv',
                             max_length=args.max_length, clean=False, MR=True, shuffle=True)
     else:
       texts, labels = dataloader.read_corpus(os.path.join(dataset, 'test_tok.csv'),
                             max_length=args.max_length, clean=False, MR=False, shuffle=True)
 
-    num_s = len(labels)
-    indx = list(range(num_s))
-    indx = random.sample(indx, 1500)
-    texts, labels = np.array(texts)[indx].tolist(), np.array(labels)[indx].tolist()
+    # num_s = len(labels)
+    # indx = list(range(num_s))
+    # indx = random.sample(indx, 1500)
+    # # texts, labels = np.array(texts)[indx].tolist(), np.array(labels)[indx].tolist()
     # texts, labels = dataloader.read_corpus(args.dataset_path, max_length=max_length)
     data = list(zip(texts, labels))
     # data = data[:args.data_size] # choose how many samples for adversary
@@ -563,8 +563,7 @@ def main():
     attack_len = args.attack_len
     print('Start attacking!')
     for idx, (text, true_label) in enumerate(data):
-        if orig_success >1000:
-          break
+        
         if idx % 20 == 0:
             print('{} adv success samples/ {} orig success samples out of {} have been finished!'.format(adv_success, orig_success, idx))
         if args.perturb_ratio > 0.:
@@ -609,7 +608,7 @@ def main():
               'avg changed rate: {:.3f}%, num of queries: {:.1f}\n'.format(args.target_model,
                                                                      (1-orig_failures/idx)*100,
                                                                      (1-adv_failures/idx)*100,
-                                                                     adv_success/1000*100,
+                                                                     adv_success/orig_success*100,
                                                                      np.mean(changed_rates)*100,
                                                                      np.mean(nums_queries))
     print(message)
