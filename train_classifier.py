@@ -141,7 +141,7 @@ def train_model(epoch, model, optimizer,
         loss.item(),
         test_acc
     ))
-    save_path = os.path.join(save_path, 'best_tfr_'+'imdb_'+d+'_'+str(max_l))
+    save_path = os.path.join(save_path, 'best_tfr_'+d+'_'+str(max_l))
     if test_acc > best_test:
         best_test = test_acc
         if save_path:
