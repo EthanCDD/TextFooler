@@ -5,7 +5,7 @@ import dataloader
 from train_classifier import Model
 import criteria
 import random
-
+import pickle
 import tensorflow as tf
 import tensorflow_hub as hub
 
@@ -486,7 +486,9 @@ def main():
     else:
       texts, labels = dataloader.read_corpus(os.path.join(dataset, 'test_tok.csv'),
                             max_length=args.max_length, clean=False, MR=False, shuffle=True)
-
+      with open('seq_number.pkl', 'rb') as f:
+          indx= pickle.load(f)
+      texts, labels = np.array(texts)[indx].tolist(), np.array(labels)[indx].tolist()
     # num_s = len(labels)
     # indx = list(range(num_s))
     # indx = random.sample(indx, 1500)
