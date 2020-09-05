@@ -486,7 +486,7 @@ def main():
     else:
       texts, labels = dataloader.read_corpus(os.path.join(dataset, 'test_tok.csv'),
                             max_length=args.max_length, clean=False, MR=False, shuffle=True)
-      with open('seq_number.pkl', 'rb') as f:
+      with open('/content/drive/My Drive/seq_number.pkl', 'rb') as f:
           indx= pickle.load(f)
       texts, labels = np.array(texts)[indx].tolist(), np.array(labels)[indx].tolist()
     # num_s = len(labels)
