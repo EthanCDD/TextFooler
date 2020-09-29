@@ -33,11 +33,13 @@ def read_corpus(path, max_length, clean=True, MR=True, encoding='utf8', shuffle=
     with open(path, encoding=encoding) as fin:
         for line in fin:
             if MR:
-                # label = line[-2]
-                # text = line[:-3].strip('"')
-                # label = int(label)
-
+              try:
                 label, sep, text = line.partition(' ')
+                label = int(label)
+                
+              except:
+                label = line[-2]
+                text = line[:-3].strip('"')
                 label = int(label)
             else:
                 label = line[-2]
